@@ -4,6 +4,7 @@ import { Calendar, Clock, Users, Sparkles, ArrowRight, CheckCircle2 } from 'luci
 import { Button } from '@/components/ui/button';
 import { BackgroundPaths } from '@/components/ui/background-paths';
 import { HoverButton } from '@/components/ui/hover-button';
+import { SparklesCore } from '@/components/ui/sparkles';
 import { Navbar } from '@/components/layout/Navbar';
 import barefootLogo from '@/assets/barefoot-logo.png';
 
@@ -233,20 +234,39 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto text-center bg-foreground text-background rounded-3xl p-12"
+            className="relative max-w-3xl mx-auto text-center bg-foreground text-background rounded-3xl p-12 overflow-hidden"
           >
-            <h2 className="text-4xl md:text-5xl font-heading tracking-wide mb-4">
-              Pronto para começar?
-            </h2>
-            <p className="text-background/70 text-lg mb-8">
-              Cadastre-se gratuitamente e agende sua primeira aula hoje.
-            </p>
-            <Link to="/signup">
-              <Button variant="secondary" size="xl" className="group bg-background text-foreground hover:bg-background/90">
-                Criar minha conta
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
+            {/* Sparkles background */}
+            <div className="absolute inset-0 w-full h-full">
+              <SparklesCore
+                id="cta-sparkles"
+                background="transparent"
+                minSize={0.4}
+                maxSize={1}
+                particleDensity={80}
+                className="w-full h-full"
+                particleColor="#ffffff"
+                speed={1}
+              />
+              {/* Radial mask to soften edges */}
+              <div className="absolute inset-0 w-full h-full bg-foreground [mask-image:radial-gradient(500px_300px_at_center,transparent_20%,black)]" />
+            </div>
+
+            {/* Content on top of sparkles */}
+            <div className="relative z-20">
+              <h2 className="text-4xl md:text-5xl font-heading tracking-wide mb-4">
+                Pronto para começar?
+              </h2>
+              <p className="text-background/70 text-lg mb-8">
+                Cadastre-se gratuitamente e agende sua primeira aula hoje.
+              </p>
+              <Link to="/signup">
+                <Button variant="secondary" size="xl" className="group bg-background text-foreground hover:bg-background/90">
+                  Criar minha conta
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
