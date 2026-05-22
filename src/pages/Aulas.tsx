@@ -116,8 +116,9 @@ export default function Aulas() {
       
       const { data, error } = await supabase
         .from('fixed_bookings')
-        .select(selectQuery);
-      
+        .select(selectQuery)
+        .eq('approval_status', 'approved');
+
       if (error) throw error;
       return data || [];
     },
