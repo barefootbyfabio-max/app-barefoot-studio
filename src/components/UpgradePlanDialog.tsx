@@ -27,15 +27,19 @@ export function UpgradePlanDialog() {
       const weeklyCredits = selectedPlan === '3x' ? 3 : 2;
 
       // Update student_plans
-      const { error: planError } = await supabase
+      const { data: updatedPlan, error: planError } = await supabase
         .from('student_plans')
         .update({
           plan_type: selectedPlan,
           weekly_credits: weeklyCredits,
         })
-        .eq('student_id', user!.id);
+        .eq('student_id', user!.id)
+        .select();
 
       if (planError) throw planError;
+      if (!updatedPlan || updatedPlan.length === 0) {
+        throw new Error('Plano não foi atualizado. Contate o professor.');
+      }
 
       // Update trial class status
       const { error: trialError } = await supabase
@@ -48,13 +52,16 @@ export function UpgradePlanDialog() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trial-class'] });
       queryClient.invalidateQueries({ queryKey: ['weekly-credits'] });
+      queryClient.invalidateQueries({ queryKey: ['student-plan'] });
       toast.success('Plano ativado!', {
         description: 'Agora você pode agendar suas aulas normalmente.',
       });
       setOpen(false);
     },
-    onError: () => {
-      toast.error('Erro ao ativar plano');
+    onError: (error: any) => {
+      toast.error('Erro ao ativar plano', {
+        description: error?.message,
+      });
     },
   });
 
