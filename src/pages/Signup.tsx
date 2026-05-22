@@ -64,7 +64,7 @@ export default function Signup() {
       return;
     }
 
-    const { error } = await signUp(email, password, name, phone, city, cpf);
+    const { error, userId } = await signUp(email, password, name, phone, city, cpf);
 
     if (error) {
       toast.error('Erro ao criar conta', {
@@ -74,15 +74,27 @@ export default function Signup() {
       return;
     }
 
-    // Get the newly created user and create their plan
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData?.user) {
-      const weeklyCredits = planType === '3x' ? 3 : planType === '2x' ? 2 : 0;
-      await supabase.from('student_plans').insert({
-        student_id: userData.user.id,
-        plan_type: planType as any,
-        weekly_credits: weeklyCredits,
+    if (!userId) {
+      toast.error('Erro ao criar plano', {
+        description: 'Conta criada mas não foi possível registrar o plano. Contate o professor.',
       });
+      setLoading(false);
+      return;
+    }
+
+    const weeklyCredits = planType === '3x' ? 3 : planType === '2x' ? 2 : 1;
+    const { error: planError } = await supabase.from('student_plans').insert({
+      student_id: userId,
+      plan_type: planType as any,
+      weekly_credits: weeklyCredits,
+    });
+
+    if (planError) {
+      toast.error('Erro ao criar plano', {
+        description: planError.message,
+      });
+      setLoading(false);
+      return;
     }
 
     toast.success('Cadastro enviado!', {

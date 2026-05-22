@@ -20,7 +20,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, name?: string, phone?: string, city?: string, cpf?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name?: string, phone?: string, city?: string, cpf?: string) => Promise<{ error: Error | null; userId: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isProfessor: boolean;
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, name?: string, phone?: string, city?: string, cpf?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    return { error };
+    return { error, userId: data?.user?.id ?? null };
   };
 
   const signIn = async (email: string, password: string) => {
