@@ -301,7 +301,7 @@ export default function Aulas() {
               <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-2">Aula Experimental</h3>
               <p className="text-muted-foreground">
-                Você tem 1 crédito gratuito para experimentar uma aula. Escolha um horário abaixo.
+                Sua aula experimental será agendada pelo professor. Acompanhe o status no seu painel principal.
               </p>
             </div>
           </motion.div>

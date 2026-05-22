@@ -82,7 +82,7 @@ export default function Signup() {
       return;
     }
 
-    const weeklyCredits = planType === '3x' ? 3 : planType === '2x' ? 2 : 1;
+    const weeklyCredits = planType === '3x' ? 3 : planType === '2x' ? 2 : 0;
     const { error: planError } = await supabase.from('student_plans').insert({
       student_id: userId,
       plan_type: planType as any,

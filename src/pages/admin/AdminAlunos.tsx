@@ -145,6 +145,25 @@ export default function AdminAlunos() {
     enabled: !!expandedStudent,
   });
 
+  const completeTrialMutation = useMutation({
+    mutationFn: async (trialId: string) => {
+      const { error } = await supabase
+        .from('trial_classes')
+        .update({ status: 'completed' })
+        .eq('id', trialId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trial-classes'] });
+      toast.success('Aula experimental marcada como concluída', {
+        description: 'O aluno verá a opção de escolher um plano.',
+      });
+    },
+    onError: () => {
+      toast.error('Erro ao marcar como concluída');
+    },
+  });
+
   // Deactivate mutation
   const deactivateMutation = useMutation({
     mutationFn: async (studentId: string) => {
@@ -442,9 +461,20 @@ export default function AdminAlunos() {
                                       Aula Experimental
                                     </h4>
                                     {trial?.status === 'scheduled' ? (
-                                      <Badge variant="outline" className="text-green-600 border-green-300">
-                                        Agendada para {trial.booking_date}
-                                      </Badge>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant="outline" className="text-green-600 border-green-300">
+                                          Agendada para {trial.booking_date}
+                                        </Badge>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                          onClick={() => completeTrialMutation.mutate(trial.id)}
+                                          disabled={completeTrialMutation.isPending}
+                                        >
+                                          Marcar como concluída
+                                        </Button>
+                                      </div>
                                     ) : trial?.status === 'completed' ? (
                                       <Badge variant="outline" className="text-blue-600 border-blue-300">
                                         Concluída - aguardando escolha de plano
