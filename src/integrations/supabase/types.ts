@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -45,7 +45,29 @@ export type Database = {
           time_slot_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_time_slot_id_fkey"
+            columns: ["time_slot_id"]
+            isOneToOne: false
+            referencedRelation: "time_slots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bookings: {
         Row: {
@@ -363,6 +385,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_booking_with_refund: {
+        Args: { p_booking_id: string }
+        Returns: string
+      }
       consume_credit:
         | { Args: { p_student_id: string }; Returns: boolean }
         | { Args: { p_date?: string; p_student_id: string }; Returns: boolean }
@@ -392,6 +418,10 @@ export type Database = {
       refund_credit: {
         Args: { p_booking_date: string; p_student_id: string }
         Returns: boolean
+      }
+      skip_fixed_day_with_refund: {
+        Args: { p_exception_date: string; p_fixed_booking_id: string }
+        Returns: string
       }
     }
     Enums: {
@@ -529,3 +559,6 @@ export const Constants = {
     },
   },
 } as const
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />
+A new version of Supabase CLI is available: v2.101.0 (currently installed v2.98.2)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

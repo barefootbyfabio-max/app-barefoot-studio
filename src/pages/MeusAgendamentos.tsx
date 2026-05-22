@@ -113,18 +113,11 @@ export default function MeusAgendamentos() {
         .eq('id', user!.id)
         .single();
 
-      // Delete the booking
-      const { error } = await supabase
-        .from('bookings')
-        .delete()
-        .eq('id', bookingId);
-      if (error) throw error;
-      
-      // Refund credit since cancellation is allowed (6h+ before)
-      await supabase.rpc('refund_credit', { 
-        p_student_id: user!.id, 
-        p_booking_date: bookingDate 
+      // Atomic: delete booking + refund credit in one transaction
+      const { error } = await supabase.rpc('cancel_booking_with_refund', {
+        p_booking_id: bookingId,
       });
+      if (error) throw error;
 
       // Send notification to professor (fire and forget)
       supabase.functions.invoke('send-notification', {
@@ -157,19 +150,12 @@ export default function MeusAgendamentos() {
   // Create exception (skip a fixed class day)
   const skipDayMutation = useMutation({
     mutationFn: async ({ fixedBookingId, date }: { fixedBookingId: string; date: string }) => {
-      const { error } = await supabase
-        .from('fixed_booking_exceptions')
-        .insert({
-          fixed_booking_id: fixedBookingId,
-          exception_date: date,
-        });
-      if (error) throw error;
-      
-      // Refund credit since release is allowed (6h+ before)
-      await supabase.rpc('refund_credit', { 
-        p_student_id: user!.id, 
-        p_booking_date: date 
+      // Atomic: insert exception + refund credit in one transaction
+      const { error } = await supabase.rpc('skip_fixed_day_with_refund', {
+        p_fixed_booking_id: fixedBookingId,
+        p_exception_date: date,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-fixed-exceptions'] });
