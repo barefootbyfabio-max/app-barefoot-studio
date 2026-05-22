@@ -460,7 +460,7 @@ export default function MeusAgendamentos() {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-lg capitalize">
-                        {format(new Date(booking.booking_date), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                        {format(new Date(booking.booking_date + 'T12:00:00'), "EEEE, d 'de' MMMM", { locale: ptBR })}
                       </p>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="w-4 h-4" />
@@ -509,7 +509,7 @@ export default function MeusAgendamentos() {
                               <AlertDialogDescription>
                                 Você está prestes a cancelar sua aula de{' '}
                                 <strong>
-                                  {format(new Date(booking.booking_date), "d 'de' MMMM", { locale: ptBR })}
+                                  {format(new Date(booking.booking_date + 'T12:00:00'), "d 'de' MMMM", { locale: ptBR })}
                                 </strong>{' '}
                                 às <strong>{booking.time_slots?.start_time}</strong>.
                                 Esta ação não pode ser desfeita.
