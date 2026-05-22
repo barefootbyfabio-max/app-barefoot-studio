@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { format, addDays, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Clock, Users, Lock, Check, Star, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Users, Lock, Check, Star, AlertCircle, Sparkles, X, CalendarX } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
@@ -216,6 +227,47 @@ export default function Aulas() {
     },
   });
 
+  const cancelBookingMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase.rpc('cancel_booking_with_refund', {
+        p_booking_id: bookingId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-credits'] });
+      toast.success('Aula cancelada', {
+        description: 'O crédito foi devolvido.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao cancelar', { description: error?.message });
+    },
+  });
+
+  const releaseFixedMutation = useMutation({
+    mutationFn: async ({ fixedBookingId, date }: { fixedBookingId: string; date: string }) => {
+      const { error } = await supabase.rpc('skip_fixed_day_with_refund', {
+        p_fixed_booking_id: fixedBookingId,
+        p_exception_date: date,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fixed_booking_exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['my-fixed-exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-credits'] });
+      toast.success('Vaga liberada', {
+        description: 'O crédito foi devolvido.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao liberar vaga', { description: error?.message });
+    },
+  });
+
   const selectedDayOfWeek = selectedDate.getDay();
   const slotsForDay = timeSlots.filter((s: any) => s.day_of_week === selectedDayOfWeek);
 
@@ -255,9 +307,17 @@ export default function Aulas() {
     return bookings.some((b: any) => b.time_slot_id === slotId && b.aluno_id === user?.id);
   };
 
+  const getUserBookingId = (slotId: string): string | undefined => {
+    return bookings.find((b: any) => b.time_slot_id === slotId && b.aluno_id === user?.id)?.id;
+  };
+
   const isUserFixedBooked = (slotId: string) => {
     const slotFixedBookings = getSlotFixedBookings(slotId);
     return slotFixedBookings.some((fb: any) => fb.aluno_id === user?.id);
+  };
+
+  const getUserFixedBookingId = (slotId: string): string | undefined => {
+    return getSlotFixedBookings(slotId).find((fb: any) => fb.aluno_id === user?.id)?.id;
   };
 
   // Check if user already has any booking (regular or fixed) on the selected date
@@ -459,7 +519,92 @@ export default function Aulas() {
                       </div>
                     )}
 
-                    {userBooked ? (
+                    {userBooked && !isProfessor ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-success">Você está agendado!</p>
+                        {locked ? (
+                          <p className="text-xs text-muted-foreground">Cancelamento fechado (menos de 6h)</p>
+                        ) : (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancelar aula
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancelar aula?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Sua aula de {format(selectedDate, "d 'de' MMMM", { locale: ptBR })} às {slot.start_time} será cancelada e o crédito devolvido.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Manter aula</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    const bookingId = getUserBookingId(slot.id);
+                                    if (bookingId) cancelBookingMutation.mutate(bookingId);
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Cancelar aula
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    ) : userFixedBooked && !isProfessor ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-success">Sua vaga fixa</p>
+                        {locked ? (
+                          <p className="text-xs text-muted-foreground">Liberação fechada (menos de 6h)</p>
+                        ) : (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-amber-700 border-amber-300 hover:bg-amber-50"
+                              >
+                                <CalendarX className="w-4 h-4 mr-1" />
+                                Liberar vaga
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Liberar vaga fixa?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Você está liberando sua vaga fixa de {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}. O crédito será devolvido e outro aluno poderá agendar.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    const fbId = getUserFixedBookingId(slot.id);
+                                    if (fbId) {
+                                      releaseFixedMutation.mutate({
+                                        fixedBookingId: fbId,
+                                        date: format(selectedDate, 'yyyy-MM-dd'),
+                                      });
+                                    }
+                                  }}
+                                  className="bg-amber-600 text-white hover:bg-amber-700"
+                                >
+                                  Liberar vaga
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    ) : userBooked ? (
                       <p className="text-sm font-medium text-success">Você está agendado!</p>
                     ) : userFixedBooked ? (
                       <p className="text-sm font-medium text-success">Sua vaga fixa</p>
